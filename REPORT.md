@@ -2,21 +2,21 @@
 
 ## Abstract
 
-**Aim:** compare two standard classifiers — logistic regression and decision tree — in classifying benign and malignant breast tumour samples under a fixed, leakage-controlled evaluation.
+**Aim:** Compare two standard classifiers — logistic regression and decision tree — in classifying benign and malignant breast tumour samples under a fixed, leakage-controlled evaluation.
 
 **Methods:** 10 × 5 repeated stratified cross-validation (50 train-validation evaluations per model) on the Wisconsin Diagnostic Breast Cancer (WDBC) dataset (569 samples, 30 features, 212 malignant), with random seed 42 and one shared set of folds for both models. Model settings were fixed before the first run and not tuned: logistic regression with standardisation inside the pipeline (fit per training fold), and a decision tree with `max_depth = 3`. We report macro precision/recall/F1, balanced accuracy, malignant-class recall separately, fold-to-fold variation, pooled confusion matrices, and majority-class/stratified baselines. The experiment is deterministic and passes 7 automated verification checks.
 
 **Results:** logistic regression scored higher on every metric — balanced accuracy 0.9746 ± 0.0179 vs 0.9184 ± 0.0263, macro F1 0.9772 ± 0.0156 vs 0.9215 ± 0.0252, and malignant recall 0.9576 ± 0.0339 vs 0.8840 ± 0.0515 (mean ± SD across 50 folds). Pooled over all folds, logistic regression missed 4.2% of malignant predictions versus 11.6% for the tree.
 
-**Conclusions:** under this evaluation setup, logistic regression outperformed the depth-3 decision tree, with the practically important difference being fewer missed malignant samples. The finding is descriptive for these two model settings, this dataset, and this protocol; the 50 fold results are not 50 independent experiments, and no clinical usefulness is claimed.
+**Conclusions:** Under this evaluation setup, logistic regression outperformed the depth-3 decision tree, with the practically important difference being fewer missed malignant samples. The finding is descriptive for these two model settings, this dataset, and this protocol; the 50 fold results are not 50 independent experiments, and no clinical usefulness is claimed.
 
 ## 1. Introduction
 
 Comparing machine learning models is the most common activity in applied classification research, and breast tumour classification is one of its most-used case studies. Yet reported model comparisons are strongly shaped by evaluation choices: how the data is split, whether preprocessing is fitted inside or outside cross-validation, whether hyperparameters were tuned on the same data used for scoring, and whether a single split or repeated folds were used. Two studies can report the same model with accuracies differing by several percentage points purely because of protocol differences.
 
-This project treats the comparison itself as the research object. Breast tumour classification on the Wisconsin Diagnostic Breast Cancer (WDBC) dataset serves as the case study, and the methodological question — how to compare two models fairly and report the comparison honestly — is given equal weight to the empirical result. Three principles guide the design:
+This project treats the comparison itself as the research object. Breast tumour classification on the Wisconsin Diagnostic Breast Cancer (WDBC) dataset serves as the case study, and the methodological question- how to compare two models fairly and report the comparison honestly- is given equal weight to the empirical result. Three principles guide the design:
 
-1. **Pre-specification.** Model settings, seed, fold structure, and metrics were fixed before any result was seen, and are reported as-is (`ANALYSIS_LOG.md` separates a-priori decisions from post-hoc additions).
+1. **Pre-specification.** Model settings, seed, fold structure, and metrics were fixed before any result was seen, and are reported as-is (`ANALYSIS_LOG.md` separates a priori decisions from post-hoc additions).
 2. **Leakage control.** Standardisation lives inside the logistic-regression pipeline so it is fitted only on each fold's training data.
 3. **Honest reporting.** Spread across folds is reported as variation, not as 50 independent experiments; conclusions are scoped to these models, this dataset, and this setup.
 
