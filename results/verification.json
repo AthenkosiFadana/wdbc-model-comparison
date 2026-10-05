@@ -2,7 +2,7 @@
   {
     "check": "determinism_rerun",
     "passed": true,
-    "detail": "6 result files byte-identical after rerun"
+    "detail": "8 result files byte-identical after rerun"
   },
   {
     "check": "fold_count_per_model",

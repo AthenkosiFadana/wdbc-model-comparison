@@ -20,7 +20,7 @@ This project treats the comparison itself as the research object. Breast tumour 
 2. **Leakage control.** Standardisation lives inside the logistic-regression pipeline so it is fitted only on each fold's training data.
 3. **Honest reporting.** Spread across folds is reported as variation, not as 50 independent experiments; conclusions are scoped to these models, this dataset, and this setup.
 
-The report proceeds as: related work (Section 2), research question (Section 3), data (Section 4), method (Section 5), results (Section 6), verification (Section 7), interpretation (Section 8), limitations (Section 9), conclusion (Section 10), and references.
+The report proceeds as: related work (Section 2), research question (Section 3), data (Section 4), method (Section 5), results (Section 6), verification (Section 7), exploratory robustness check (Section 8), interpretation (Section 9), limitations (Section 10), conclusion (Section 11), and references.
 
 ## 2. Related work
 
@@ -145,31 +145,64 @@ Stored in `results/baselines.csv`.
 6. Scaler statistics differ from full-dataset statistics (no leakage from test folds).
 7. Logistic regression beats the majority-class baseline on balanced accuracy.
 
-## 8. Interpretation
+## 8. Exploratory robustness check (post-hoc)
+
+Run **after** the primary results were known, and labelled exploratory throughout (`ANALYSIS_LOG.md`). Two questions: was the gap an artefact of seed 42, and was it an artefact of the pre-specified `max_depth = 3`? Script: `robustness.py`.
+
+### Seed sensitivity (pre-specified settings, 5 seeds × 50 folds each)
+
+| Seed | LR balanced acc. | Tree balanced acc. | LR malignant recall | Tree malignant recall |
+|---|---|---|---|---|
+| 7 | 0.9721 | 0.9189 | 0.9579 | 0.8818 |
+| 42 (primary) | 0.9746 | 0.9184 | 0.9576 | 0.8840 |
+| 123 | 0.9760 | 0.9190 | 0.9615 | 0.8827 |
+| 777 | 0.9732 | 0.9171 | 0.9580 | 0.8840 |
+| 2026 | 0.9745 | 0.9178 | 0.9598 | 0.8830 |
+
+Logistic regression scored higher on balanced accuracy and on malignant recall in **5 of 5 seeds**, with the balanced-accuracy gap ranging only from 0.0532 to 0.0570. The direction and size of the gap are not an artefact of the seed.
+
+### Tree depth sensitivity (seed-42 folds, 50 folds)
+
+| `max_depth` | Balanced accuracy | Malignant recall |
+|---|---|---|
+| 2 | 0.9133 ± 0.0289 | 0.8901 ± 0.0591 |
+| 3 (pre-specified) | 0.9184 ± 0.0263 | 0.8840 ± 0.0515 |
+| 4 | 0.9226 ± 0.0271 | 0.8953 ± 0.0518 |
+| 5 | 0.9279 ± 0.0230 | 0.9062 ± 0.0477 |
+| unlimited | 0.9253 ± 0.0279 | 0.9071 ± 0.0507 |
+
+Deeper trees do improve on the pre-specified depth 3 (best observed: depth 5, balanced accuracy 0.9279), but even the best tree variant remains 0.047 below logistic regression (0.9746) on the same folds. Two caveats: this sweep both selects and evaluates the "best" depth on the same folds, which biases the tree's numbers *upward* (Varma and Simon, 2006) — so 0.9279 is a generous figure for the tree; and it is exploratory, not part of the pre-specified analysis.
+
+Files: `results/robustness_seeds.csv`, `results/robustness_tree_depths.csv`.
+
+## 9. Interpretation
 
 - Under this evaluation setup, logistic regression with fold-wise standardisation scores higher than a depth-3 decision tree on every reported metric, with the largest advantage in malignant recall (+7.4 points) and the smallest in benign recall (+3.9 points).
 - The dominant practical difference is error type: the tree produces roughly 2.7× as many missed malignant predictions as logistic regression.
 - The tree's wider fold-to-fold spread indicates its performance is more sensitive to which samples land in the training fold, consistent with a small, hard-split model.
 - Our ordering (logistic regression above decision tree) matches the single-split comparison of Akinwamide et al. (2025), and both models sit within the 92–99% band typical of published WDBC results — consistent with the view that WDBC is a "easy" benchmark where protocol differences move numbers as much as model differences do.
+- The exploratory checks (Section 8) support the stability of the finding: the gap persisted across five seeds and under every tree depth tested, so it is not attributable to the particular seed or the depth-3 limit.
 
-## 9. Limitations
+## 10. Limitations
 
 - The 50 fold results are **not 50 independent experiments** — training sets overlap heavily — so the spreads above are described as variation across folds, not as a basis for a significance claim or a definitive statistical win. The gap is descriptive for this run (Bates, Hastie, and Tibshirani, 2024).
 - The dataset is small (569 samples), comes from a single source (UCI WDBC, digitised fine-needle aspirates from one hospital system), and the conclusion is limited to these two models, this dataset, and this evaluation setup.
 - No clinical usefulness is claimed. Results do not establish diagnostic performance, generalisation to other populations, or readiness for deployment.
 - Settings were fixed rather than tuned, so the comparison reflects these pre-specified configurations, not each model's best achievable performance. A tuned tree or a different regularisation for logistic regression could narrow or widen the gap.
 - The literature comparison in Section 2 is indicative rather than systematic; no formal systematic review was performed.
+- The robustness check (Section 8) was exploratory and limited to the seeds and tree depths tested; it does not cover other model families (random forest, SVM, tuned logistic regression) or a nested design, and its depth sweep selects and evaluates on the same folds.
 
-## 10. Conclusion
+## 11. Conclusion
 
 Under a pre-specified, leakage-controlled, repeated stratified 5-fold protocol on WDBC, logistic regression (`C=1.0`, with fold-wise standardisation) outperformed a depth-3 decision tree on all nine reported metrics. The practically important difference is in error structure: logistic regression identified 95.8% of malignant samples on average versus 88.4% for the tree, and its pooled false-negative rate was 4.2% versus 11.6%. The tree was also less stable across folds. These findings are descriptive for these two configurations, this dataset, and this evaluation setup; stronger claims would require external validation datasets, nested evaluation for any tuning, and uncertainty estimates that account for dependence between folds.
 
-## 11. Reproduce
+## 12. Reproduce
 
 ```
 pip install -r requirements.txt
 python run_comparison.py
 python verify.py
+python robustness.py
 ```
 
 Requires Python 3.11+. Outputs go to `results/`.

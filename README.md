@@ -27,6 +27,7 @@ Full results and limitations: [REPORT.md](REPORT.md).
 run_comparison.py   main experiment: fixed settings, 50 shared folds, writes results/
 verify.py           verification: determinism, fold identity, leakage check, baselines
                     (7/7 checks pass -> results/verification.json)
+robustness.py       exploratory post-hoc checks: 5 seeds, tree depth sweep
 REPORT.md           full write-up: abstract, intro, related work, method, results, limitations, references
 ANALYSIS_LOG.md     dated log of decisions, a priori vs post-hoc
 results/            fold_metrics.csv, summary.csv, confusion_matrices.csv, dataset_info.json
@@ -51,6 +52,9 @@ produce byte-identical result files (see `verify.py`).
   statistics; differs from full-data statistics).
 - Majority-class and stratified-dummy baselines evaluated on the same folds
   (`results/baselines.csv`).
+- Exploratory robustness (post-hoc): LR > tree on balanced accuracy and
+  malignant recall across 5/5 seeds; no tested tree depth closes the gap
+  (`results/robustness_*.csv`, report Section 8).
 
 ## Scope
 

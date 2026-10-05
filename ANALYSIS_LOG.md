@@ -75,3 +75,21 @@ metrics for the two compared models.
   accuracy; benchmark figures quoted are those reported in the cited papers
   under their own protocols and are not directly comparable to ours.
 - No experiment code, settings, or reported metric values were changed.
+
+## 2026-10-05 — post-hoc (exploratory robustness check)
+
+Added after the primary results and write-up, explicitly exploratory:
+
+- **Seeds:** re-ran both models at the pre-specified settings with 4 extra
+  fold seeds (7, 123, 777, 2026), 50 folds each. LR > tree on balanced
+  accuracy and malignant recall in 5/5 seeds; gap 0.0532–0.0570.
+- **Tree depths:** depths 2, 3, 4, 5 and unlimited on the primary seed-42
+  folds. Deeper trees improve (best: depth 5, balanced accuracy 0.9279) but
+  remain below LR (0.9746). Known bias: best-depth selection uses the same
+  folds as evaluation, so tree figures here are optimistic (Varma & Simon,
+  2006); this is noted in the report.
+- Script: `robustness.py`; outputs: `results/robustness_seeds.csv`,
+  `results/robustness_tree_depths.csv`; report Section 8.
+- Decision made after seeing primary results; the variants tested (seeds,
+  depths) were chosen without reference to outcomes of those variants.
+- No primary results, settings, or metrics were changed.
