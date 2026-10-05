@@ -29,6 +29,8 @@ verify.py           verification: determinism, fold identity, leakage check, bas
                     (7/7 checks pass -> results/verification.json)
 robustness.py       exploratory post-hoc checks: 5 seeds, tree depth sweep
 REPORT.md           full write-up: abstract, intro, related work, method, results, limitations, references
+POST.md             plain-language abstract for sharing (blog/LinkedIn/GitHub)
+PORTFOLIO.md        portfolio description, resume bullets, interview talking points
 ANALYSIS_LOG.md     dated log of decisions, a priori vs post-hoc
 results/            fold_metrics.csv, summary.csv, confusion_matrices.csv, dataset_info.json
 ```
