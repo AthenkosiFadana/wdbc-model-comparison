@@ -1,17 +1,66 @@
 # Logistic Regression vs Decision Tree on the Wisconsin Diagnostic Breast Cancer Dataset
 
-## Research question
+## Abstract
+
+**Aim:** compare two standard classifiers — logistic regression and decision tree — in classifying benign and malignant breast tumour samples under a fixed, leakage-controlled evaluation.
+
+**Methods:** 10 × 5 repeated stratified cross-validation (50 train-validation evaluations per model) on the Wisconsin Diagnostic Breast Cancer (WDBC) dataset (569 samples, 30 features, 212 malignant), with random seed 42 and one shared set of folds for both models. Model settings were fixed before the first run and not tuned: logistic regression with standardisation inside the pipeline (fit per training fold), and a decision tree with `max_depth = 3`. We report macro precision/recall/F1, balanced accuracy, malignant-class recall separately, fold-to-fold variation, pooled confusion matrices, and majority-class/stratified baselines. The experiment is deterministic and passes 7 automated verification checks.
+
+**Results:** logistic regression scored higher on every metric — balanced accuracy 0.9746 ± 0.0179 vs 0.9184 ± 0.0263, macro F1 0.9772 ± 0.0156 vs 0.9215 ± 0.0252, and malignant recall 0.9576 ± 0.0339 vs 0.8840 ± 0.0515 (mean ± SD across 50 folds). Pooled over all folds, logistic regression missed 4.2% of malignant predictions versus 11.6% for the tree.
+
+**Conclusions:** under this evaluation setup, logistic regression outperformed the depth-3 decision tree, with the practically important difference being fewer missed malignant samples. The finding is descriptive for these two model settings, this dataset, and this protocol; the 50 fold results are not 50 independent experiments, and no clinical usefulness is claimed.
+
+## 1. Introduction
+
+Comparing machine learning models is the most common activity in applied classification research, and breast tumour classification is one of its most-used case studies. Yet reported model comparisons are strongly shaped by evaluation choices: how the data is split, whether preprocessing is fitted inside or outside cross-validation, whether hyperparameters were tuned on the same data used for scoring, and whether a single split or repeated folds were used. Two studies can report the same model with accuracies differing by several percentage points purely because of protocol differences.
+
+This project treats the comparison itself as the research object. Breast tumour classification on the Wisconsin Diagnostic Breast Cancer (WDBC) dataset serves as the case study, and the methodological question — how to compare two models fairly and report the comparison honestly — is given equal weight to the empirical result. Three principles guide the design:
+
+1. **Pre-specification.** Model settings, seed, fold structure, and metrics were fixed before any result was seen, and are reported as-is (`ANALYSIS_LOG.md` separates a-priori decisions from post-hoc additions).
+2. **Leakage control.** Standardisation lives inside the logistic-regression pipeline so it is fitted only on each fold's training data.
+3. **Honest reporting.** Spread across folds is reported as variation, not as 50 independent experiments; conclusions are scoped to these models, this dataset, and this setup.
+
+The report proceeds as: related work (Section 2), research question (Section 3), data (Section 4), method (Section 5), results (Section 6), verification (Section 7), interpretation (Section 8), limitations (Section 9), conclusion (Section 10), and references.
+
+## 2. Related work
+
+**Origin of the dataset.** WDBC was introduced by Street, Wolberg, and Mangasarian (1993), who computed ten nuclear morphometry features (mean, standard error, and worst value of each) from digitised fine-needle aspirate images, yielding 30 numeric predictors for 569 samples. Using ten-fold cross-validation, they reported **97% accuracy** with a single linear separating plane on just three of the thirty features, and the system was deployed at University of Wisconsin Hospitals. The dataset is distributed through the UCI Machine Learning Repository.
+
+**Typical reported performance.** Later studies on WDBC consistently report high scores, but with heterogeneous protocols:
+
+- Akinwamide, Fele, and Ojo (2025) compared six classifiers on a single 80/20 split and found logistic regression best at **97.90% accuracy**, with the decision tree at 93.71% — the same ordering we observe, under a different (and less stable) evaluation design.
+- Pati et al. (2024), in a peer-reviewed PLOS ONE study, combined recursive feature elimination with grey-wolf optimisation and seven classifiers, reaching **98.25% accuracy** on WDBC for their best hybrid configuration.
+- Across the literature, accuracies from the low 90s (shallow single trees, untuned) to the high 90s (linear models, tuned ensembles) are routine, which itself is a caution: on this dataset almost any reasonable pipeline scores well, so **the interesting differences are in error structure and stability, not headline accuracy alone**.
+
+**Methodological literature.** Two findings from the evaluation literature shape our reporting. First, cross-validation folds are dependent — their training sets overlap heavily — so fold scores cannot be treated as independent replications (Bates, Hastie, and Tibshirani, 2024). Second, using cross-validation both to select a model and to report its performance optimistically biases the estimate (Varma and Simon, 2006); repeated CV reduces variance but does not remove the need for a held-out or nested design when tuning. Because our settings were fixed in advance and no tuning was performed, we avoid the second problem entirely; because we describe spread rather than run significance tests on fold scores, we avoid over-claiming on the first.
+
+**Positioning.** Unlike most of the studies above, this project does not tune models, select features, or claim a best classifier in general. It asks a narrower, fully reproducible question: given two pre-specified configurations and one shared set of repeated stratified folds, how do they differ in average performance, in stability across folds, and — critically for the case study — in which kinds of errors they make?
+
+## 3. Research question
 
 How do logistic regression and decision tree models compare in classifying benign and malignant samples in the Wisconsin Diagnostic Breast Cancer (WDBC) dataset, when evaluated using repeated stratified 5-fold cross-validation?
 
 Breast tumour classification is the case study; the project itself is centred on the model comparison.
 
-## Method
+## 4. Data
+
+| Property | Value |
+|---|---|
+| Dataset | Breast Cancer Wisconsin (Diagnostic), UCI Machine Learning Repository |
+| Samples | 569 |
+| Features | 30 numeric (mean, standard error, and worst value of 10 nuclear characteristics: radius, texture, perimeter, area, smoothness, compactness, concavity, concave points, symmetry, fractal dimension) |
+| Classes | malignant = 212 (37.3%), benign = 357 (62.7%) |
+| Missing values | none |
+| Source | digitised fine-needle aspirate images, University of Wisconsin Hospitals |
+
+Loaded via `sklearn.datasets.load_breast_cancer`, which encodes malignant as 0 and benign as 1; this report uses those labels explicitly throughout. The 62.7 / 35.3 class split is mildly imbalanced: an always-"benign" classifier scores 62.7% accuracy while catching no malignant samples, which is why balanced accuracy and malignant recall are reported alongside accuracy.
+
+## 5. Method
 
 - **Evaluation design:** 5-fold stratified cross-validation, repeated 10 times, `random_state = 42` → 50 train-validation evaluations per model.
 - **Identical folds:** the 50 splits are materialised once and shared by both models, so every fold comparison is paired.
 - **No information leakage:** standardisation sits inside the logistic-regression pipeline and is fitted only on each fold's training data.
-- **Class labelling:** `malignant` is class 0 (212 samples), `benign` is class 1 (357 samples), 569 samples and 30 features in total. Malignant recall is reported separately because it measures the share of malignant samples the model actually catches.
+- **Class labelling:** `malignant` is class 0 (212 samples), `benign` is class 1 (357 samples). Malignant recall is reported separately because it measures the share of malignant samples the model actually catches.
 - **Statistics reported:** mean, standard deviation (variation across folds), min and max for every metric, plus confusion matrices pooled over all 50 folds.
 
 ### Settings fixed before running (a priori, no tuning)
@@ -21,9 +70,9 @@ Breast tumour classification is the case study; the project itself is centred on
 | Logistic regression | `StandardScaler` → `LogisticRegression(C=1.0, solver="lbfgs", max_iter=1000, random_state=42)` |
 | Decision tree | `DecisionTreeClassifier(criterion="gini", max_depth=3, random_state=42)`, no pruning or depth tuning |
 
-Neither model was tuned on this data; the settings were chosen in advance and reported as-is.
+Neither model was tuned on this data; the settings were chosen in advance and reported as-is. Logistic regression (Cox, 1958) is a linear probabilistic classifier; the decision tree (Breiman et al., 1984) is a depth-limited axis-aligned rule set, included as the interpretable, non-linear counterpart. Depth 3 was chosen a priori as a shallow, interpretable tree rather than a tuned optimum. Software: scikit-learn 1.6.1 (Pedregosa et al., 2011).
 
-## Results
+## 6. Results
 
 ### Headline comparison (mean ± standard deviation across 50 folds)
 
@@ -83,7 +132,7 @@ majority-class baseline also shows why accuracy alone is misleading here
 Added after the first run as a reference point — see `ANALYSIS_LOG.md`.
 Stored in `results/baselines.csv`.
 
-## Verification
+## 7. Verification
 
 `python verify.py` re-checks the experiment and writes
 `results/verification.json`. All 7 checks pass:
@@ -96,23 +145,57 @@ Stored in `results/baselines.csv`.
 6. Scaler statistics differ from full-dataset statistics (no leakage from test folds).
 7. Logistic regression beats the majority-class baseline on balanced accuracy.
 
-## Interpretation
+## 8. Interpretation
 
 - Under this evaluation setup, logistic regression with fold-wise standardisation scores higher than a depth-3 decision tree on every reported metric, with the largest advantage in malignant recall (+7.4 points) and the smallest in benign recall (+3.9 points).
 - The dominant practical difference is error type: the tree produces roughly 2.7× as many missed malignant predictions as logistic regression.
 - The tree's wider fold-to-fold spread indicates its performance is more sensitive to which samples land in the training fold, consistent with a small, hard-split model.
+- Our ordering (logistic regression above decision tree) matches the single-split comparison of Akinwamide et al. (2025), and both models sit within the 92–99% band typical of published WDBC results — consistent with the view that WDBC is a "easy" benchmark where protocol differences move numbers as much as model differences do.
 
-## Limitations
+## 9. Limitations
 
-- The 50 fold results are **not 50 independent experiments** — training sets overlap heavily — so the spreads above are described as variation across folds, not as a basis for a significance claim or a definitive statistical win. The gap is descriptive for this run.
-- The dataset is small (569 samples), comes from a single source (UCI WDBC, digitised fine-needle aspirates), and the conclusion is limited to these two models, this dataset, and this evaluation setup.
+- The 50 fold results are **not 50 independent experiments** — training sets overlap heavily — so the spreads above are described as variation across folds, not as a basis for a significance claim or a definitive statistical win. The gap is descriptive for this run (Bates, Hastie, and Tibshirani, 2024).
+- The dataset is small (569 samples), comes from a single source (UCI WDBC, digitised fine-needle aspirates from one hospital system), and the conclusion is limited to these two models, this dataset, and this evaluation setup.
 - No clinical usefulness is claimed. Results do not establish diagnostic performance, generalisation to other populations, or readiness for deployment.
-- Settings were fixed rather than tuned, so the comparison reflects these pre-specified configurations, not each model's best achievable performance.
+- Settings were fixed rather than tuned, so the comparison reflects these pre-specified configurations, not each model's best achievable performance. A tuned tree or a different regularisation for logistic regression could narrow or widen the gap.
+- The literature comparison in Section 2 is indicative rather than systematic; no formal systematic review was performed.
 
-## Reproduce
+## 10. Conclusion
+
+Under a pre-specified, leakage-controlled, repeated stratified 5-fold protocol on WDBC, logistic regression (`C=1.0`, with fold-wise standardisation) outperformed a depth-3 decision tree on all nine reported metrics. The practically important difference is in error structure: logistic regression identified 95.8% of malignant samples on average versus 88.4% for the tree, and its pooled false-negative rate was 4.2% versus 11.6%. The tree was also less stable across folds. These findings are descriptive for these two configurations, this dataset, and this evaluation setup; stronger claims would require external validation datasets, nested evaluation for any tuning, and uncertainty estimates that account for dependence between folds.
+
+## 11. Reproduce
 
 ```
+pip install -r requirements.txt
 python run_comparison.py
+python verify.py
 ```
 
-Requires Python 3.11+, `scikit-learn`, `pandas`, `numpy`. Outputs go to `results/`.
+Requires Python 3.11+. Outputs go to `results/`.
+
+## References
+
+Akinwamide, S., Fele, T. and Ojo, O.A. (2025). Comparative evaluation of supervised machine learning algorithms for breast cancer prediction using the Wisconsin diagnostic dataset. *GJETA*. Available at: https://gjeta.com/sites/default/files/fulltext_pdf/GJETA-2025-0246.pdf [Accessed 5 Oct. 2026].
+
+Bates, S., Hastie, T. and Tibshirani, R. (2024). Cross-validation: what does it estimate and how well does it do it? *Journal of the American Statistical Association*, 119(545), pp. 477–489.
+
+Breiman, L., Friedman, J.H., Olshen, R.A. and Stone, C.J. (1984). *Classification and Regression Trees*. Belmont, CA: Wadsworth.
+
+Chicco, D. and Jurman, G. (2020). The advantages of the Matthews correlation coefficient (MCC) over F1 score and accuracy in binary classification evaluation. *BMC Genomics*, 21, 6.
+
+Cox, D.R. (1958). The regression analysis of binary sequences. *Journal of the Royal Statistical Society: Series B*, 20(2), pp. 215–242.
+
+Dietterich, T.G. (1998). Approximate statistical tests for comparing supervised classification learning algorithms. *Neural Computation*, 10(7), pp. 1895–1923.
+
+Mangasarian, O.L., Street, W.N. and Wolberg, W.H. (1995). Breast cancer diagnosis and prognosis via linear programming. *Operations Research*, 43(4), pp. 570–577.
+
+Pati, A., Panigrahi, A., Parhi, M., Giri, J., Qin, H., Mallik, S., Pattanayak, S.R. and Agrawal, U.K. (2024). Performance assessment of hybrid machine learning approaches for breast cancer and recurrence prediction. *PLOS ONE*, 19(8), e0304768. https://doi.org/10.1371/journal.pone.0304768
+
+Pedregosa, F. et al. (2011). Scikit-learn: machine learning in Python. *Journal of Machine Learning Research*, 12, pp. 2825–2830.
+
+Street, W.N., Wolberg, W.H. and Mangasarian, O.L. (1993). Nuclear feature extraction for breast tumor diagnosis. *IS&T/SPIE 1993 International Symposium on Electronic Imaging: Science and Technology*, 1905, pp. 861–870. https://doi.org/10.1117/12.148698
+
+UCI Machine Learning Repository (n.d.). *Breast Cancer Wisconsin (Diagnostic) Data Set*. https://doi.org/10.24432/C5DW2B [Accessed 5 Oct. 2026].
+
+Varma, S. and Simon, R. (2006). Bias in error estimation when using cross-validation for model selection. *BMC Bioinformatics*, 7, 91.

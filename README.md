@@ -27,7 +27,7 @@ Full results and limitations: [REPORT.md](REPORT.md).
 run_comparison.py   main experiment: fixed settings, 50 shared folds, writes results/
 verify.py           verification: determinism, fold identity, leakage check, baselines
                     (7/7 checks pass -> results/verification.json)
-REPORT.md           full write-up (method, results, limitations)
+REPORT.md           full write-up: abstract, intro, related work, method, results, limitations, references
 ANALYSIS_LOG.md     dated log of decisions, a priori vs post-hoc
 results/            fold_metrics.csv, summary.csv, confusion_matrices.csv, dataset_info.json
 ```

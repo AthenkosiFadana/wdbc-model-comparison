@@ -63,3 +63,15 @@ metrics for the two compared models.
 - Baseline scores: majority class balanced accuracy 0.5000, malignant recall
   0.0000; stratified random 0.5115 ± 0.0402 balanced accuracy. Both compared
   models far exceed these.
+
+## 2026-10-05 — post-hoc (literature and write-up)
+
+- Report expanded with abstract, introduction, related work, data section,
+  conclusion, and reference list.
+- Literature was searched **after** results were known, so the framing of
+  Section 2 and the comparison drawn in Section 8 were written with the
+  results in view. Sources were checked against primary pages (UCI dataset
+  page, Street et al. 1993 abstract, PLOS ONE article page) for citation
+  accuracy; benchmark figures quoted are those reported in the cited papers
+  under their own protocols and are not directly comparable to ours.
+- No experiment code, settings, or reported metric values were changed.
