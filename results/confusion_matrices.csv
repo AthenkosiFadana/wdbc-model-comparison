@@ -1,0 +1,9 @@
+model,true_label,predicted_label,count
+logistic_regression,malignant,malignant,2030
+logistic_regression,malignant,benign,90
+logistic_regression,benign,malignant,30
+logistic_regression,benign,benign,3540
+decision_tree,malignant,malignant,1874
+decision_tree,malignant,benign,246
+decision_tree,benign,malignant,168
+decision_tree,benign,benign,3402

@@ -1,0 +1,37 @@
+[
+  {
+    "check": "determinism_rerun",
+    "passed": true,
+    "detail": "6 result files byte-identical after rerun"
+  },
+  {
+    "check": "fold_count_per_model",
+    "passed": true,
+    "detail": "each model has 50 fold evaluations: decision_tree=50, logistic_regression=50"
+  },
+  {
+    "check": "identical_test_sizes_per_fold",
+    "passed": true,
+    "detail": "both models evaluated on matching train/test sizes for every fold"
+  },
+  {
+    "check": "folds_match_recorded_seed",
+    "passed": true,
+    "detail": "recorded fold sizes match folds regenerated from seed 42 (shared by both models)"
+  },
+  {
+    "check": "scaler_matches_training_fold",
+    "passed": true,
+    "detail": "max |scaler stat - train-fold stat| = 0.00e+00 over 10 folds"
+  },
+  {
+    "check": "scaler_not_fit_on_full_data",
+    "passed": true,
+    "detail": "scaler statistics differ from full-dataset statistics (not leaked)"
+  },
+  {
+    "check": "beats_majority_baseline",
+    "passed": true,
+    "detail": "LR balanced accuracy 0.9746 > majority 0.5000"
+  }
+]

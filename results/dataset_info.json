@@ -1,0 +1,28 @@
+{
+  "n_samples": 569,
+  "n_features": 30,
+  "class_counts": {
+    "malignant": 212,
+    "benign": 357
+  },
+  "seed": 42,
+  "n_splits": 5,
+  "n_repeats": 10,
+  "n_fold_evaluations": 50,
+  "model_settings": {
+    "logistic_regression": {
+      "pipeline": "StandardScaler -> LogisticRegression",
+      "C": 1.0,
+      "solver": "lbfgs",
+      "max_iter": 1000,
+      "random_state": 42,
+      "standardization_fit_on_training_fold_only": true
+    },
+    "decision_tree": {
+      "criterion": "gini",
+      "max_depth": 3,
+      "random_state": 42,
+      "no_pruning_tuning": true
+    }
+  }
+}
